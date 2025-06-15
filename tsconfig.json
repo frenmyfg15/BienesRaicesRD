@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "es2017",                    // Buen target para Node.js
+    "module": "commonjs",                 // Para usar require/module.exports
+    "strict": true,                       // Habilita todas las verificaciones estrictas
+    "esModuleInterop": true,              // Importación de módulos CommonJS
+    "skipLibCheck": true,                 // Mejora rendimiento al ignorar chequeos de types de node_modules
+    "outDir": "dist",                     // Carpeta de salida de compilación
+    "rootDir": "src",                     // Carpeta raíz del código fuente
+    "typeRoots": ["./node_modules/@types", "./src/types"], // Incluye tus tipos personalizados
+    "forceConsistentCasingInFileNames": true, // Evita errores en sistemas case-sensitive
+    "moduleResolution": "node",           // Resolución de módulos estilo Node.js
+    "resolveJsonModule": true,            // Permite importar archivos JSON como módulos
+    "allowSyntheticDefaultImports": true  // Permite usar imports por defecto de módulos CommonJS
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}

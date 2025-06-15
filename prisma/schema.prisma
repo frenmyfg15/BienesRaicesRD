@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum RolUsuario {
+  COMPRADOR
+  VENDEDOR
+}
+
+model Usuario {
+  id                Int           @id @default(autoincrement())
+  nombre            String
+  email             String        @unique
+  password          String?
+  googleId          String?       @unique
+  imagenPerfilUrl   String?
+
+  telefono          String?
+  whatsapp          String?
+  rol               RolUsuario    @default(COMPRADOR) // Añadir un valor por defecto
+  
+  favoritos         Favorito[]
+  interaccionesComoComprador Interaccion[] @relation("UsuarioInteracciones") // <--- Nuevo nombre de relación
+  interaccionesComoVendedor Interaccion[] @relation("VendedorInteracciones") // <--- Nuevo nombre de relación
+  propiedades       Propiedad[]
+  proyectos         Proyecto[]
+}
+
+model Proyecto {
+  id                Int           @id @default(autoincrement())
+  nombre            String
+  slug              String        @unique
+  descripcion       String
+  ubicacion         String
+  estado            String
+  imagenDestacada   String
+  
+  usuarioVendedorId Int
+  usuarioVendedor   Usuario       @relation(fields: [usuarioVendedorId], references: [id])
+  
+  propiedades       Propiedad[]
+  interacciones     Interaccion[]
+  favoritos         Favorito[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Imagen {
+  id          Int       @id @default(autoincrement())
+  url         String
+  propiedadId Int
+  propiedad   Propiedad @relation(fields: [propiedadId], references: [id])
+}
+
+model Propiedad {
+  id                Int           @id @default(autoincrement())
+  nombre            String
+  slug              String        @unique
+  tipo              String
+  precio            Float
+  habitaciones      Int?
+  baños             Int?
+  metros2           Float?
+  estado            String
+  descripcion       String
+  ubicacion         String
+  proyectoId        Int?
+  proyecto          Proyecto?     @relation(fields: [proyectoId], references: [id])
+  
+  usuarioVendedorId Int
+  usuarioVendedor   Usuario       @relation(fields: [usuarioVendedorId], references: [id])
+  
+  interacciones     Interaccion[]
+  imagenes          Imagen[]
+  favoritos         Favorito[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+
+model Favorito {
+  id          Int        @id @default(autoincrement())
+  usuarioId   Int
+  usuario     Usuario    @relation(fields: [usuarioId], references: [id])
+  propiedadId Int?
+  propiedad   Propiedad? @relation(fields: [propiedadId], references: [id])
+  proyectoId  Int?
+  proyecto    Proyecto?  @relation(fields: [proyectoId], references: [id])
+  createdAt   DateTime   @default(now())
+}
+
+model Interaccion {
+  id                Int         @id @default(autoincrement())
+  tipo              String
+  
+  usuarioId         Int?
+  usuario           Usuario?    @relation("UsuarioInteracciones", fields: [usuarioId], references: [id]) // <--- ¡CORREGIDO!
+  
+  propiedadId       Int?
+  propiedad         Propiedad?  @relation(fields: [propiedadId], references: [id])
+  
+  proyectoId        Int?
+  proyecto          Proyecto?   @relation(fields: [proyectoId], references: [id])
+  
+  usuarioVendedorId Int?
+  usuarioVendedor   Usuario?    @relation("VendedorInteracciones", fields: [usuarioVendedorId], references: [id]) // <--- ¡CORREGIDO!
+  
+  nombreVendedor    String
+  fecha             DateTime    @default(now())
+}
