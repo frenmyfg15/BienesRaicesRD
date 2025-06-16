@@ -1,69 +1,73 @@
 // src/controllers/propiedad/getPropiedadBySlug.ts
 import { RequestHandler, Request } from 'express';
 import { PrismaClient } from '@prisma/client';
-// No necesitamos JwtPayload aquí porque esta ruta debería ser pública
 
 const prisma = new PrismaClient();
 
-// Extiende la interfaz Request de Express para tipar los parámetros de la URL
 interface GetPropiedadBySlugRequest extends Request {
   params: {
-    slug: string; // El slug de la propiedad viene en los parámetros de la URL
+    slug: string;
   };
 }
 
 export const getPropiedadBySlug: RequestHandler<{ slug: string }> = async (req: GetPropiedadBySlugRequest, res) => {
   try {
-    const { slug } = req.params; // Obtiene el slug de la URL
+    const { slug } = req.params;
 
     if (!slug) {
-        res.status(400).json({ mensaje: 'Slug de propiedad no proporcionado.' });
-      return 
+      res.status(400).json({ mensaje: 'Slug de propiedad no proporcionado.' });
+      return
     }
 
-    // Busca la propiedad por slug en la base de datos
     const propiedad = await prisma.propiedad.findUnique({
-      where: { slug: slug },
+      where: { slug },
       include: {
         usuarioVendedor: {
-          select: { // Selecciona solo los campos necesarios del vendedor
+          select: {
             id: true,
             nombre: true,
             email: true,
             telefono: true,
             whatsapp: true,
-          }
+            imagenPerfilUrl: true,
+          },
         },
         proyecto: {
-          select: { // Selecciona solo los campos necesarios del proyecto
+          select: {
             id: true,
             nombre: true,
             slug: true,
             estado: true,
-          }
+          },
         },
-        imagenes: { // Incluye todas las imágenes relacionadas con la propiedad
+        imagenes: {
           select: {
             id: true,
             url: true,
-          }
-        }
+          },
+        },
       },
     });
 
     if (!propiedad) {
-      // Si no se encuentra la propiedad, devuelve un 404
       res.status(404).json({ mensaje: 'Propiedad no encontrada.' });
-      return 
+      return
     }
 
-    // Devuelve la propiedad encontrada
-    res.status(200).json({ mensaje: 'Propiedad encontrada.', propiedad });
-
+    res.status(200).json({
+      mensaje: 'Propiedad encontrada.',
+      propiedad: {
+        ...propiedad,
+        // Los campos nuevos ya se incluyen automáticamente desde Prisma
+        // Si quieres agregar lógica adicional o transformar algo, lo puedes hacer aquí
+      },
+    });
+    return
   } catch (error) {
     console.error('Error al obtener propiedad por slug:', error);
     res.status(500).json({ mensaje: 'Error interno del servidor al obtener la propiedad.' });
+    return
   } finally {
-    await prisma.$disconnect(); // Desconecta Prisma después de la operación
+    await prisma.$disconnect();
   }
 };

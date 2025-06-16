@@ -13,42 +13,79 @@ enum RolUsuario {
 }
 
 model Usuario {
-  id                Int           @id @default(autoincrement())
-  nombre            String
-  email             String        @unique
-  password          String?
-  googleId          String?       @unique
-  imagenPerfilUrl   String?
-
-  telefono          String?
-  whatsapp          String?
-  rol               RolUsuario    @default(COMPRADOR) // Añadir un valor por defecto
-  
-  favoritos         Favorito[]
-  interaccionesComoComprador Interaccion[] @relation("UsuarioInteracciones") // <--- Nuevo nombre de relación
-  interaccionesComoVendedor Interaccion[] @relation("VendedorInteracciones") // <--- Nuevo nombre de relación
-  propiedades       Propiedad[]
-  proyectos         Proyecto[]
+  id                         Int           @id @default(autoincrement())
+  nombre                     String
+  email                      String        @unique
+  password                   String?
+  googleId                   String?       @unique
+  imagenPerfilUrl            String?
+  telefono                   String?
+  whatsapp                   String?
+  rol                        RolUsuario    @default(COMPRADOR)
+  favoritos                  Favorito[]
+  interaccionesComoComprador Interaccion[] @relation("UsuarioInteracciones")
+  interaccionesComoVendedor  Interaccion[] @relation("VendedorInteracciones")
+  propiedades                Propiedad[]
+  proyectos                  Proyecto[]
 }
 
 model Proyecto {
-  id                Int           @id @default(autoincrement())
+  id                Int               @id @default(autoincrement())
   nombre            String
-  slug              String        @unique
+  slug              String            @unique
   descripcion       String
   ubicacion         String
   estado            String
   imagenDestacada   String
-  
+  videoUrl          String?
   usuarioVendedorId Int
-  usuarioVendedor   Usuario       @relation(fields: [usuarioVendedorId], references: [id])
-  
+  usuarioVendedor   Usuario           @relation(fields: [usuarioVendedorId], references: [id])
   propiedades       Propiedad[]
   interacciones     Interaccion[]
   favoritos         Favorito[]
+  imagenes          ImagenProyecto[]  // ✅ Múltiples imágenes del proyecto
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+}
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model ImagenProyecto {
+  id         Int      @id @default(autoincrement())
+  url        String
+  proyectoId Int
+  proyecto   Proyecto @relation(fields: [proyectoId], references: [id])
+}
+
+model Propiedad {
+  id                     Int           @id @default(autoincrement())
+  nombre                 String
+  slug                   String        @unique
+  tipo                   String
+  precio                 Float
+  habitaciones           Int?
+  baños                  Int?
+  parqueos               Int?
+  metros2                Float?
+  estado                 String
+  descripcion            String
+  ubicacion              String
+  nivel                  Int?
+  ascensor               Boolean?
+  amueblado              Boolean?
+  mantenimiento          Float?
+  anoConstruccion        Int?
+  gastosLegalesIncluidos Boolean?
+  disponibleDesde        DateTime?
+  videoUrl               String?
+  tipoPropiedad          String?
+  proyectoId             Int?
+  usuarioVendedorId      Int
+  proyecto               Proyecto?     @relation(fields: [proyectoId], references: [id])
+  usuarioVendedor        Usuario       @relation(fields: [usuarioVendedorId], references: [id])
+  interacciones          Interaccion[]
+  imagenes               Imagen[]
+  favoritos              Favorito[]
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
 }
 
 model Imagen {
@@ -58,40 +95,13 @@ model Imagen {
   propiedad   Propiedad @relation(fields: [propiedadId], references: [id])
 }
 
-model Propiedad {
-  id                Int           @id @default(autoincrement())
-  nombre            String
-  slug              String        @unique
-  tipo              String
-  precio            Float
-  habitaciones      Int?
-  baños             Int?
-  metros2           Float?
-  estado            String
-  descripcion       String
-  ubicacion         String
-  proyectoId        Int?
-  proyecto          Proyecto?     @relation(fields: [proyectoId], references: [id])
-  
-  usuarioVendedorId Int
-  usuarioVendedor   Usuario       @relation(fields: [usuarioVendedorId], references: [id])
-  
-  interacciones     Interaccion[]
-  imagenes          Imagen[]
-  favoritos         Favorito[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-
 model Favorito {
   id          Int        @id @default(autoincrement())
   usuarioId   Int
-  usuario     Usuario    @relation(fields: [usuarioId], references: [id])
   propiedadId Int?
-  propiedad   Propiedad? @relation(fields: [propiedadId], references: [id])
   proyectoId  Int?
+  usuario     Usuario    @relation(fields: [usuarioId], references: [id])
+  propiedad   Propiedad? @relation(fields: [propiedadId], references: [id])
   proyecto    Proyecto?  @relation(fields: [proyectoId], references: [id])
   createdAt   DateTime   @default(now())
 }
@@ -99,19 +109,14 @@ model Favorito {
 model Interaccion {
   id                Int         @id @default(autoincrement())
   tipo              String
-  
   usuarioId         Int?
-  usuario           Usuario?    @relation("UsuarioInteracciones", fields: [usuarioId], references: [id]) // <--- ¡CORREGIDO!
-  
   propiedadId       Int?
-  propiedad         Propiedad?  @relation(fields: [propiedadId], references: [id])
-  
   proyectoId        Int?
-  proyecto          Proyecto?   @relation(fields: [proyectoId], references: [id])
-  
   usuarioVendedorId Int?
-  usuarioVendedor   Usuario?    @relation("VendedorInteracciones", fields: [usuarioVendedorId], references: [id]) // <--- ¡CORREGIDO!
-  
   nombreVendedor    String
   fecha             DateTime    @default(now())
+  usuario           Usuario?    @relation("UsuarioInteracciones", fields: [usuarioId], references: [id])
+  propiedad         Propiedad?  @relation(fields: [propiedadId], references: [id])
+  proyecto          Proyecto?   @relation(fields: [proyectoId], references: [id])
+  usuarioVendedor   Usuario?    @relation("VendedorInteracciones", fields: [usuarioVendedorId], references: [id])
 }

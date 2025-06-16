@@ -1,65 +1,75 @@
-// src/controllers/proyecto/getProyectoBySlug.ts
 import { RequestHandler, Request } from 'express';
-import { PrismaClient } from '@prisma/client';
-// No necesitamos JwtPayload aquí porque esta ruta debería ser pública
+import { PrismaClient, Proyecto } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// Extiende la interfaz Request de Express para tipar los parámetros de la URL
 interface GetProyectoBySlugRequest extends Request {
     params: {
-        slug: string; // El slug del proyecto viene en los parámetros de la URL
+        slug: string;
     };
 }
 
-export const getProyectoBySlug: RequestHandler<{ slug: string }> = async (req: GetProyectoBySlugRequest, res) => {
+export const getProyectoBySlug: RequestHandler<{ slug: string }> = async (
+    req: GetProyectoBySlugRequest,
+    res
+) => {
     try {
-        const { slug } = req.params; // Obtiene el slug de la URL
+        const { slug } = req.params;
 
         if (!slug) {
             res.status(400).json({ mensaje: 'Slug de proyecto no proporcionado.' });
-            return
+            return;
         }
 
-        // Busca el proyecto por slug en la base de datos
         const proyecto = await prisma.proyecto.findUnique({
-            where: { slug: slug },
+            where: { slug },
             include: {
-                usuarioVendedor: {
-                    select: { // Selecciona solo los campos necesarios del vendedor
-                        id: true,
-                        nombre: true,
-                        email: true,
-                    }
-                },
-                propiedades: { // Opcional: Incluir propiedades asociadas al proyecto
+                usuarioVendedor: true, // Incluir todos los campos del vendedor
+                // === AÑADIDO: Incluir las imágenes directamente asociadas al Proyecto ===
+                imagenes: {
                     select: {
                         id: true,
-                        nombre: true,
-                        slug: true,
-                        precio: true,
-                        ubicacion: true,
-                        imagenes: { // Incluir imágenes de las propiedades asociadas
-                            select: { id: true, url: true }
-                        }
-                    }
+                        url: true,
+                    },
+                },
+                // === AÑADIDO: Si `videoUrl` es una relación y no un campo directo, inclúyelo aquí ===
+                // Por ejemplo, si tienes un modelo 'VideoProyecto' con una relación 1:1 o 1:Many
+                // video: {
+                //     select: {
+                //         url: true,
+                //     },
+                // },
+                // Si `videoUrl` es un campo directo en el modelo Proyecto, no necesita `include`.
+
+                propiedades: { // Incluir propiedades anidadas y sus imágenes
+                    include: {
+                        imagenes: {
+                            select: {
+                                id: true,
+                                url: true,
+                            },
+                        },
+                        // Puedes ajustar si necesitas `proyecto` y `usuarioVendedor` aquí o si ya los tienes en la raíz
+                        // proyecto: true, // Ya lo tienes si es de donde viene el query
+                        // usuarioVendedor: true, // Ya lo tienes en la raíz del proyecto
+                    },
                 },
             },
         });
 
         if (!proyecto) {
-            // Si no se encuentra el proyecto, devuelve un 404
             res.status(404).json({ mensaje: 'Proyecto no encontrado.' });
-            return
+            return;
         }
 
-        // Devuelve el proyecto encontrado
         res.status(200).json({ mensaje: 'Proyecto encontrado.', proyecto });
+        return;
 
     } catch (error) {
         console.error('Error al obtener proyecto por slug:', error);
         res.status(500).json({ mensaje: 'Error interno del servidor al obtener el proyecto.' });
+        return;
     } finally {
-        await prisma.$disconnect(); // Desconecta Prisma después de la operación
+        await prisma.$disconnect();
     }
 };

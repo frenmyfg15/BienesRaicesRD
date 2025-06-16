@@ -5,7 +5,6 @@ import { JwtPayload } from 'jsonwebtoken';
 
 const prisma = new PrismaClient();
 
-// Interfaz para los datos que se esperan en el cuerpo de la solicitud (req.body) al actualizar una propiedad.
 interface PropiedadUpdateBody {
     nombre?: string;
     slug?: string;
@@ -18,29 +17,34 @@ interface PropiedadUpdateBody {
     descripcion?: string;
     ubicacion?: string;
     proyectoId?: number | null;
+
+    // Nuevos campos
+    parqueos?: number;
+    mantenimiento?: number;
+    conAscensor?: boolean;
+    amueblado?: boolean;
+    aceptaMascotas?: boolean;
+    nivel?: number;
 }
 
-// Extiende JwtPayload con los campos de tu usuario
 interface JwtPayloadExtended extends JwtPayload {
     id: number;
-    email?: string; // Opcional, como lo corregimos antes
+    email?: string;
     rol: string;
     nombre?: string;
 }
 
-// Extiende la interfaz Request de Express para incluir 'user' y tipar 'body' y 'params'
 interface AuthRequest extends Request {
     user?: JwtPayloadExtended;
     body: PropiedadUpdateBody;
     params: { id: string };
 }
 
-// Corrección: Ahora `req` se tipa explícitamente como AuthRequest
 export const updatePropiedad: RequestHandler<{ id: string }> = async (req: AuthRequest, res) => {
     try {
         const { id } = req.params;
         const updatedData = req.body;
-        const vendedorId = req.user?.id; // Ahora 'req.user' debería ser reconocido
+        const vendedorId = req.user?.id;
 
         if (!vendedorId) {
             res.status(401).json({ error: 'No autorizado: ID de vendedor no encontrado en el token.' });
@@ -53,10 +57,7 @@ export const updatePropiedad: RequestHandler<{ id: string }> = async (req: AuthR
             return
         }
 
-        const propiedadExistente = await prisma.propiedad.findUnique({
-            where: { id: propiedadId },
-        });
-
+        const propiedadExistente = await prisma.propiedad.findUnique({ where: { id: propiedadId } });
         if (!propiedadExistente) {
             res.status(404).json({ error: 'Propiedad no encontrada.' });
             return
@@ -68,19 +69,15 @@ export const updatePropiedad: RequestHandler<{ id: string }> = async (req: AuthR
         }
 
         if (updatedData.slug && updatedData.slug !== propiedadExistente.slug) {
-            const existingPropiedadWithNewSlug = await prisma.propiedad.findUnique({
-                where: { slug: updatedData.slug },
-            });
-            if (existingPropiedadWithNewSlug) {
+            const existingSlug = await prisma.propiedad.findUnique({ where: { slug: updatedData.slug } });
+            if (existingSlug) {
                 res.status(409).json({ error: 'El nuevo slug ya existe para otra propiedad.' });
                 return
             }
         }
 
         if (updatedData.proyectoId !== undefined && updatedData.proyectoId !== null) {
-            const proyectoExistente = await prisma.proyecto.findUnique({
-                where: { id: updatedData.proyectoId },
-            });
+            const proyectoExistente = await prisma.proyecto.findUnique({ where: { id: updatedData.proyectoId } });
             if (!proyectoExistente) {
                 res.status(400).json({ error: 'El proyecto al que intentas asociar la propiedad no existe.' });
                 return
@@ -97,7 +94,17 @@ export const updatePropiedad: RequestHandler<{ id: string }> = async (req: AuthR
             habitaciones: updatedData.habitaciones !== undefined ? Number(updatedData.habitaciones) : undefined,
             baños: updatedData.baños !== undefined ? Number(updatedData.baños) : undefined,
             metros2: updatedData.metros2 !== undefined ? Number(updatedData.metros2) : undefined,
-            proyecto: updatedData.proyectoId === null ? { disconnect: true } : (updatedData.proyectoId !== undefined ? { connect: { id: updatedData.proyectoId } } : undefined),
+            parqueos: updatedData.parqueos !== undefined ? Number(updatedData.parqueos) : undefined,
+            mantenimiento: updatedData.mantenimiento !== undefined ? Number(updatedData.mantenimiento) : undefined,
+            conAscensor: updatedData.conAscensor,
+            amueblado: updatedData.amueblado,
+            aceptaMascotas: updatedData.aceptaMascotas,
+            nivel: updatedData.nivel !== undefined ? Number(updatedData.nivel) : undefined,
+            proyecto: updatedData.proyectoId === null
+                ? { disconnect: true }
+                : updatedData.proyectoId !== undefined
+                    ? { connect: { id: updatedData.proyectoId } }
+                    : undefined,
         };
 
         delete dataToUpdate.proyectoId;

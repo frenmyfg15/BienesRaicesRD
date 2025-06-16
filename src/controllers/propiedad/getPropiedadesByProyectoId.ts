@@ -5,7 +5,6 @@ import { JwtPayload } from 'jsonwebtoken';
 
 const prisma = new PrismaClient();
 
-// Extiende JwtPayload con los campos de tu usuario
 interface JwtPayloadExtended extends JwtPayload {
     id: number;
     email?: string;
@@ -13,16 +12,15 @@ interface JwtPayloadExtended extends JwtPayload {
     nombre?: string;
 }
 
-// Extiende la interfaz Request de Express para incluir 'user' y tipar 'params'
 interface AuthRequest extends Request {
     user?: JwtPayloadExtended;
-    params: { proyectoId: string }; // El ID del proyecto vendrá en los parámetros de la URL
+    params: { proyectoId: string };
 }
 
 export const getPropiedadesByProyectoId: RequestHandler<{ proyectoId: string }> = async (req: AuthRequest, res) => {
     try {
-        const { proyectoId } = req.params; // ID del proyecto
-        const vendedorId = req.user?.id; // ID del vendedor autenticado
+        const { proyectoId } = req.params;
+        const vendedorId = req.user?.id;
 
         if (!vendedorId) {
             res.status(401).json({ error: 'No autorizado: ID de vendedor no encontrado en el token.' });
@@ -35,7 +33,6 @@ export const getPropiedadesByProyectoId: RequestHandler<{ proyectoId: string }> 
             return
         }
 
-        // Opcional: Verificar que el proyecto exista y pertenezca al vendedor autenticado
         const proyectoExistente = await prisma.proyecto.findUnique({
             where: { id: idProyecto },
             select: { usuarioVendedorId: true },
@@ -51,17 +48,20 @@ export const getPropiedadesByProyectoId: RequestHandler<{ proyectoId: string }> 
             return
         }
 
-        // Obtener todas las propiedades asociadas a ese proyecto y que pertenecen al vendedor
         const propiedades = await prisma.propiedad.findMany({
             where: {
                 proyectoId: idProyecto,
-                usuarioVendedorId: vendedorId, // Asegurarse de que el vendedor es el propietario
+                usuarioVendedorId: vendedorId,
             },
             include: {
                 usuarioVendedor: {
                     select: {
                         id: true,
                         nombre: true,
+                        email: true,
+                        telefono: true,
+                        whatsapp: true,
+                        imagenPerfilUrl: true,
                     },
                 },
                 proyecto: {
@@ -69,16 +69,31 @@ export const getPropiedadesByProyectoId: RequestHandler<{ proyectoId: string }> 
                         id: true,
                         nombre: true,
                         slug: true,
+                        estado: true,
+                    },
+                },
+                imagenes: {
+                    select: {
+                        id: true,
+                        url: true,
                     },
                 },
             },
+            orderBy: {
+                createdAt: 'desc',
+            },
         });
 
-        res.status(200).json({ mensaje: 'Propiedades del proyecto obtenidas exitosamente.', propiedades });
+        res.status(200).json({
+            mensaje: 'Propiedades del proyecto obtenidas exitosamente.',
+            propiedades,
+        });
+        return
 
-    } catch (error: any) {
+    } catch (error) {
         console.error('Error al obtener propiedades por ID de proyecto:', error);
         res.status(500).json({ error: 'Error interno del servidor al obtener las propiedades del proyecto.' });
+        return
     } finally {
         await prisma.$disconnect();
     }
