@@ -126,9 +126,10 @@ export const googleLoginUsuario: RequestHandler = async (req, res) => {
         res
             .cookie('token', token, {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict',
-                maxAge: 7 * 24 * 60 * 60 * 1000,
+                secure: process.env.NODE_ENV === 'production', // Esto ya está bien
+                // CAMBIO CLAVE AQUÍ: 'strict' -> 'none' para producción, 'lax' para desarrollo
+                sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+                maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días
                 path: '/',
             })
             .status(200)

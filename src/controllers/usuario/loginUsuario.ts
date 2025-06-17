@@ -45,28 +45,32 @@ export const loginUsuario: RequestHandler = async (req, res) => {
         res
             .cookie('token', token, {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict',
-                maxAge: 7 * 24 * 60 * 60 * 1000,
+                secure: process.env.NODE_ENV === 'production', // Esto ya está bien
+                // CAMBIO CLAVE AQUÍ:
+                sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+                // 'None' para producción (permite cross-site) y 'Lax' para desarrollo (más seguro para el mismo sitio)
+                maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días
+                // Opcional: Si tienes problemas, podrías considerar añadir `domain`
+                // domain: '.up.railway.app', // Asegúrate de que este sea el dominio raíz de tu backend
             })
             .status(200)
-            .json({
-                mensaje: 'Login exitoso',
-                usuario: {
-                    id: usuario.id,
-                    nombre: usuario.nombre,
-                    email: usuario.email,
-                    rol: usuario.rol,
-                },
-            });
+    .json({
+        mensaje: 'Login exitoso',
+        usuario: {
+            id: usuario.id,
+            nombre: usuario.nombre,
+            email: usuario.email,
+            rol: usuario.rol,
+        },
+    });
     } catch (error: any) { // Asegúrate de que 'error' sea de tipo 'any' o 'Error'
-        // 6. Manejo de errores - ¡MEJORA AQUÍ!
-        console.error('Error al iniciar sesión:', error); // Esto registrará el objeto de error completo en el servidor
-        // Intenta enviar un mensaje de error más específico al frontend si está disponible
-        const errorMessage = error.message || 'Error interno del servidor al iniciar sesión. Por favor, intenta de nuevo.';
-        res.status(500).json({ error: errorMessage });
-    } finally {
-        await prisma.$disconnect();
-    }
+    // 6. Manejo de errores - ¡MEJORA AQUÍ!
+    console.error('Error al iniciar sesión:', error); // Esto registrará el objeto de error completo en el servidor
+    // Intenta enviar un mensaje de error más específico al frontend si está disponible
+    const errorMessage = error.message || 'Error interno del servidor al iniciar sesión. Por favor, intenta de nuevo.';
+    res.status(500).json({ error: errorMessage });
+} finally {
+    await prisma.$disconnect();
+}
 };
 
