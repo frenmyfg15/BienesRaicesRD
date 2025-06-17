@@ -26,7 +26,7 @@ interface PropiedadBody {
   disponibleDesde?: string | null; // ISO string
   videoUrl?: string | null;
   tipoPropiedad?: string | null;
-  proyectoId?: number | null;
+  proyectoId?: number | null; // Sigue siendo number | null en la interfaz
   imageUrls: string[];
 }
 
@@ -65,7 +65,7 @@ export const createPropiedad: RequestHandler = async (req: AuthRequest, res) => 
       disponibleDesde,
       videoUrl,
       tipoPropiedad,
-      proyectoId,
+      proyectoId, // Valor original (puede ser string del req.body)
       imageUrls,
     } = req.body;
 
@@ -87,7 +87,7 @@ export const createPropiedad: RequestHandler = async (req: AuthRequest, res) => 
       return
     }
 
-    const data: any = {
+    const data: any = { // Considera tipar 'data' de forma más estricta si `any` es temporal
       nombre,
       slug,
       tipo,
@@ -117,8 +117,16 @@ export const createPropiedad: RequestHandler = async (req: AuthRequest, res) => 
       },
     };
 
-    if (proyectoId) {
-      const proyecto = await prisma.proyecto.findUnique({ where: { id: proyectoId } });
+    if (proyectoId !== undefined && proyectoId !== null) { // Asegúrate de que proyectoId no sea null/undefined
+      // CONVERSIÓN CLAVE AQUÍ: Asegúrate de que sea un número
+      const parsedProyectoId = typeof proyectoId === 'string' ? parseInt(proyectoId, 10) : proyectoId;
+
+      if (isNaN(parsedProyectoId as number)) { // Verificar si la conversión falló (ej. "abc")
+        res.status(400).json({ error: 'ID de proyecto inválido. Debe ser un número.' });
+        return;
+      }
+
+      const proyecto = await prisma.proyecto.findUnique({ where: { id: parsedProyectoId as number } });
       if (!proyecto) {
         res.status(400).json({ error: 'El proyecto no existe.' });
         return
@@ -127,7 +135,7 @@ export const createPropiedad: RequestHandler = async (req: AuthRequest, res) => 
         res.status(403).json({ error: 'No puedes asociar propiedades a este proyecto.' });
         return
       }
-      data.proyecto = { connect: { id: proyectoId } };
+      data.proyecto = { connect: { id: parsedProyectoId } }; // También usar el valor numérico aquí
     }
 
     const nuevaPropiedad = await prisma.propiedad.create({
@@ -142,7 +150,7 @@ export const createPropiedad: RequestHandler = async (req: AuthRequest, res) => 
     res.status(201).json({ mensaje: 'Propiedad creada exitosamente.', propiedad: nuevaPropiedad });
     return
 
-  } catch (error: any) {
+  } catch (error: any) { // Considera cambiar a 'unknown' y usar `axios.isAxiosError` si `error` puede venir de Axios
     console.error('Error al crear propiedad:', error);
     if (error.code === 'P2002') {
       res.status(409).json({ error: 'El slug ya existe u otro error de unicidad.' });

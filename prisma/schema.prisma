@@ -33,7 +33,7 @@ model Proyecto {
   id                Int               @id @default(autoincrement())
   nombre            String
   slug              String            @unique
-  descripcion       String
+  descripcion       String            @db.Text
   ubicacion         String
   estado            String
   imagenDestacada   String
@@ -66,7 +66,7 @@ model Propiedad {
   parqueos               Int?
   metros2                Float?
   estado                 String
-  descripcion            String
+  descripcion            String         @db.Text
   ubicacion              String
   nivel                  Int?
   ascensor               Boolean?
