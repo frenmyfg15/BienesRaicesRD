@@ -9,7 +9,7 @@ interface PropiedadBody {
   nombre: string;
   slug: string;
   tipo: string;
-  precio: number;
+  precio: number; // Esto es lo que esperas después de la conversión
   habitaciones?: number | null;
   baños?: number | null;
   parqueos?: number | null;
@@ -26,7 +26,7 @@ interface PropiedadBody {
   disponibleDesde?: string | null; // ISO string
   videoUrl?: string | null;
   tipoPropiedad?: string | null;
-  proyectoId?: number | null; // Sigue siendo number | null en la interfaz
+  proyectoId?: number | null;
   imageUrls: string[];
 }
 
@@ -48,7 +48,7 @@ export const createPropiedad: RequestHandler = async (req: AuthRequest, res) => 
       nombre,
       slug,
       tipo,
-      precio,
+      precio, // Este `precio` todavía es String del req.body
       habitaciones,
       baños,
       parqueos,
@@ -65,7 +65,7 @@ export const createPropiedad: RequestHandler = async (req: AuthRequest, res) => 
       disponibleDesde,
       videoUrl,
       tipoPropiedad,
-      proyectoId, // Valor original (puede ser string del req.body)
+      proyectoId,
       imageUrls,
     } = req.body;
 
@@ -76,8 +76,15 @@ export const createPropiedad: RequestHandler = async (req: AuthRequest, res) => 
       return
     }
 
-    if (!nombre || !slug || !tipo || precio === undefined || !estado || !descripcion || !ubicacion || !imageUrls?.length) {
-      res.status(400).json({ error: 'Faltan campos obligatorios o imágenes.' });
+    // Validación y conversión del precio
+    const parsedPrecio = parseFloat(precio as any); // Usar `as any` temporalmente si TypeScript se queja del tipo de `precio` aquí
+    if (isNaN(parsedPrecio) || parsedPrecio < 0) { // Validar si es un número válido y positivo
+      res.status(400).json({ error: 'El precio debe ser un número válido y positivo.' });
+      return;
+    }
+
+    if (!nombre || !slug || !tipo || parsedPrecio === undefined || !estado || !descripcion || !ubicacion || !imageUrls?.length) {
+      res.status(400).json({ error: 'Faltan campos obligatorios o imágenes (revisa el precio).' });
       return
     }
 
@@ -91,7 +98,7 @@ export const createPropiedad: RequestHandler = async (req: AuthRequest, res) => 
       nombre,
       slug,
       tipo,
-      precio,
+      precio: parsedPrecio, // <-- ¡USAR EL PRECIO YA PARSEADO AQUÍ!
       habitaciones: habitaciones ?? null,
       baños: baños ?? null,
       parqueos: parqueos ?? null,
@@ -117,11 +124,10 @@ export const createPropiedad: RequestHandler = async (req: AuthRequest, res) => 
       },
     };
 
-    if (proyectoId !== undefined && proyectoId !== null) { // Asegúrate de que proyectoId no sea null/undefined
-      // CONVERSIÓN CLAVE AQUÍ: Asegúrate de que sea un número
+    if (proyectoId !== undefined && proyectoId !== null) {
       const parsedProyectoId = typeof proyectoId === 'string' ? parseInt(proyectoId, 10) : proyectoId;
 
-      if (isNaN(parsedProyectoId as number)) { // Verificar si la conversión falló (ej. "abc")
+      if (isNaN(parsedProyectoId as number)) {
         res.status(400).json({ error: 'ID de proyecto inválido. Debe ser un número.' });
         return;
       }
@@ -135,7 +141,7 @@ export const createPropiedad: RequestHandler = async (req: AuthRequest, res) => 
         res.status(403).json({ error: 'No puedes asociar propiedades a este proyecto.' });
         return
       }
-      data.proyecto = { connect: { id: parsedProyectoId } }; // También usar el valor numérico aquí
+      data.proyecto = { connect: { id: parsedProyectoId } };
     }
 
     const nuevaPropiedad = await prisma.propiedad.create({
@@ -150,7 +156,7 @@ export const createPropiedad: RequestHandler = async (req: AuthRequest, res) => 
     res.status(201).json({ mensaje: 'Propiedad creada exitosamente.', propiedad: nuevaPropiedad });
     return
 
-  } catch (error: any) { // Considera cambiar a 'unknown' y usar `axios.isAxiosError` si `error` puede venir de Axios
+  } catch (error: any) {
     console.error('Error al crear propiedad:', error);
     if (error.code === 'P2002') {
       res.status(409).json({ error: 'El slug ya existe u otro error de unicidad.' });
