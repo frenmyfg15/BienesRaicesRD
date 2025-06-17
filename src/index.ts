@@ -23,38 +23,38 @@ interface AuthRequest extends Request {
 dotenv.config();
 
 const app = express();
+
+
+// Le dice a Express que confíe en los encabezados de proxy (como X-Forwarded-For)
+app.set('trust proxy', true);
+
 app.use(cookieParser());
 const PORT = process.env.PORT || 4000;
 
 // Configuración de CORS
-// Es una buena práctica usar una variable de entorno para el origen del frontend
 const allowedOrigins = [
-  'http://localhost:3000', // Para desarrollo local
-  'https://bienes-raices-rd-frontend-9gbu.vercel.app', // <-- ¡TU DOMINIO DE VERCEL AQUÍ!
-  // Puedes añadir más si tienes un dominio personalizado en Vercel
+  'http://localhost:3000',
+  'https://bienes-raices-rd-frontend-9gbu.vercel.app',
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Permitir solicitudes sin origen (como de Postman o CURL)
-    // y de los orígenes permitidos
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true, // <-- ¡SÚPER IMPORTANTE! Permite el envío de cookies
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], // Incluye todos los métodos que uses
-  allowedHeaders: ['Content-Type', 'Authorization'], // Encabezados que el cliente puede enviar
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 app.use(express.json());
 app.use(limiter); // Limitador de peticiones
 
 // Endpoint para verificar token y obtener datos del usuario autenticado
-// Lo movemos bajo /api para consistencia de API
-app.get('/api/me', verificarToken, (req: AuthRequest, res: Response) => { // <--- RUTA CAMBIADA A /api/me
+app.get('/api/me', verificarToken, (req: AuthRequest, res: Response) => {
   if (req.user) {
     res.json({
       mensaje: `Token válido. Bienvenido/a ${req.user.rol || 'usuario'} con ID ${req.user.id}`,
@@ -67,15 +67,14 @@ app.get('/api/me', verificarToken, (req: AuthRequest, res: Response) => { // <--
 });
 
 // Obtener las rutas de usuario
-// Montamos las rutas de autenticación bajo /api/auth para consistencia
-app.use('/api/auth', usuarioRoutes); // <--- RUTA CAMBIADA A /api/auth
+app.use('/api/auth', usuarioRoutes);
 app.use('/api/propiedades', propiedadRoutes);
 app.use('/api/proyectos', proyectoRoutes);
 app.use('/api/vendedor', vendedorRoutes);
 app.use('/api/upload', uploadRoutes);
 
 // Ejemplo de ruta protegida por verificarToken
-app.get('/api/ruta-protegida', verificarToken, (req: AuthRequest, res: Response) => { // <--- RUTA CAMBIADA A /api/ruta-protegida
+app.get('/api/ruta-protegida', verificarToken, (req: AuthRequest, res: Response) => {
   res.json({ mensaje: `Hola usuario con ID ${req.user?.id}` });
 });
 
