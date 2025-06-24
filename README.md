@@ -1,42 +1,40 @@
-# Bienes Raíces RD - Frontend
+# Bienes Raíces RD - Backend
 
-Frontend del proyecto **Bienes Raíces RD**, una plataforma web desarrollada con **Next.js y TypeScript** que permite la búsqueda, publicación y gestión de propiedades inmobiliarias en República Dominicana.
+Backend de **Bienes Raíces RD**, una plataforma para la gestión de propiedades inmobiliarias en República Dominicana. Esta API está construida con **Node.js**, **Express** y **TypeScript**, usando **Prisma** como ORM con base de datos **MySQL**, y desplegada en **Railway**.
+
+---
 
 ## Funcionalidades principales
 
-### Visitantes
-- Explorar propiedades disponibles por tipo, ubicación y precio.
-- Ver detalles completos de cada propiedad.
-- Diseño responsive y navegación rápida.
-
-### Vendedores
-- Registro y autenticación como vendedor.
-- Acceso a un panel de control privado.
-- Publicación de propiedades.
-- Edición y eliminación de propiedades propias.
-
-### Compradores
-- Registro y autenticación como comprador.
-- Panel de usuario personalizado.
-- Posibilidad de guardar propiedades favoritas y realizar acciones como comprador.
+- Registro y login para **compradores** y **vendedores**
+- Autenticación con **tokens JWT**
+- Soporte para login con **Google (OAuth 2.0)**
+- Creación, edición y eliminación de propiedades
+- Subida de imágenes a través de **Cloudinary**
+- Protección de rutas privadas con middleware de autenticación
+- Middleware para limitar número de solicitudes por IP
+- Manejo de CORS y variables de entorno con `dotenv`
 
 ---
 
 ## Tecnologías utilizadas
 
-- [Next.js](https://nextjs.org/) con [TypeScript](https://www.typescriptlang.org/)
-- [Tailwind CSS](https://tailwindcss.com/) para estilos
-- [Axios](https://axios-http.com/) para consumo de API
-- [React Hook Form](https://react-hook-form.com/) y validación de formularios
-- Gestión de rutas con Next.js
-- Manejo de estado y autenticación básica (con cookies/token)
+- **Node.js** + **Express**
+- **TypeScript**
+- **Prisma ORM**
+- **MySQL** (Railway)
+- **Cloudinary** (almacenamiento de imágenes)
+- **Google OAuth 2.0**
+- **JWT** para autenticación
+- **bcryptjs** para hash de contraseñas
+- **dotenv**, **cors**, **express-rate-limit**, entre otros
 
 ---
 
 ## Instalación y configuración
 
-### 1. Clonar el repositorio
+### 1. Clona el repositorio
 
 ```bash
-git clone https://github.com/frenmyfg15/BienesRaicesRD-Frontend.git
-cd BienesRaicesRD-Frontend
+git clone https://github.com/frenmyfg15/BienesRaicesRD.git
+cd BienesRaicesRD
